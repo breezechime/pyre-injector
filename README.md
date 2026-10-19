@@ -1,47 +1,73 @@
 # pyre-injector
 
-轻量级 Python 依赖注入框架。自动解析类型注解、管理作用域与延迟初始化，
-**核心零依赖**（仅标准库），推荐统一通过 `container.` 注册与获取依赖。
+<p>
+  <img src="https://img.shields.io/badge/Python-3.9%2B-3776AB?logo=python&logoColor=white" alt="Python">
+  <img src="https://img.shields.io/badge/dependencies-zero-brightgreen" alt="Zero dependencies">
+  <img src="https://img.shields.io/badge/license-MIT-blue" alt="License">
+  <img src="https://img.shields.io/badge/pattern-dependency%20injection-ff69b4" alt="DI">
+</p>
+
+轻量级 Python 依赖注入框架：依据类型注解自动装配、管理作用域与延迟初始化。
+**核心零依赖**（仅标准库），统一通过 `container.` 注册与获取依赖。
+
+## ✨ 特点
+
+- 🚀 **轻量** — 只用标准库，无任何第三方依赖。
+- 🧩 **自动解析** — 依据构造函数 / 工厂函数的类型注解递归装配依赖，不用手写工厂。
+- 🎯 **统一 API** — `container.inject()` 注册、`container.provider()` 获取，装饰器写法完全等价。
+- ♻️ **作用域管理** — `singleton`（默认）与 `prototype` 一行切换。
+- ⏳ **延迟初始化** — `lazy_init=True` 时首次使用才构建，避免启动期无谓开销。
+- 🏭 **工厂函数** — 模块级工厂与类内工厂方法都支持，参数同样参与注入。
+- 🧷 **手动注入实例** — 已构造好的配置、连接池、logger 可直接交给容器。
+- 🧭 **精确异常定位** — 报出异常发生位置与依赖定义位置，并检测循环依赖。
+- 📦 **零必需依赖** — 只用标准库。
+
+## 📦 安装
+
+```bash
+pip install pyre-injector
+```
+
+## 💡 一个简单的例子
 
 ```python
 from pyre_injector import DependencyContainer
 
 container = DependencyContainer()
 
+
 class DatabaseConfig:
     def __init__(self):
         self.host = 'localhost'
+
 
 class UserRepository:
     def __init__(self, config: DatabaseConfig):
         self.config = config
 
+
 container.inject(DatabaseConfig)
 container.inject(UserRepository)
 
-container.provider(DatabaseConfig).host        # 'localhost'
-container.provider(UserRepository).config      # DatabaseConfig 实例（自动注入）
+container.provider(DatabaseConfig).host      # 'localhost'
+container.provider(UserRepository).config    # DatabaseConfig 实例（自动注入）
 ```
 
-## 特性
+## 👩‍💻 目录结构
 
-- **自动依赖解析** — 依据构造函数 / 工厂函数的类型注解递归装配依赖。
-- **`container.` 统一 API** — `container.inject()` 注册，`container.provider()` 获取。
-- **装饰器同样可用** — `@inject` / `@inject(scope='prototype')`，与容器 API 等价。
-- **作用域管理** — `singleton`（默认）与 `prototype`。
-- **延迟初始化** — `lazy_init=True` 时首次使用时才构建。
-- **工厂函数** — 支持模块级工厂与类内工厂方法，工厂参数同样参与注入。
-- **手动注入实例** — 把已构造好的对象（配置、连接池、logger……）交给容器。
-- **精确的异常定位** — 初始化失败时报出**异常发生位置**与**依赖定义位置**，并检测循环依赖。
-- **零必需依赖** — 只用标准库。
-
-## 安装
-
-```bash
-pip install pyre-injector
+```text
+pyre-injector
+├── pyre_injector
+│   ├── __init__.py    # 对外导出
+│   ├── container.py   # 容器：注册、解析、作用域
+│   ├── constants.py   # 作用域等常量
+│   └── globals.py     # 激活容器
+├── examples/          # 可运行示例
+├── tests/             # 单元测试
+└── setup.py
 ```
 
-## 快速开始
+## 🚀 快速开始
 
 ### 注册依赖
 
@@ -95,7 +121,7 @@ autowired(Logger)      # 从活动容器按类型获取
 provider('mailer')     # provider 是 autowired 的别名
 ```
 
-## 作用域
+## ♻️ 作用域
 
 | 作用域 | 说明 |
 | --- | --- |
@@ -110,7 +136,7 @@ container.provider(Config) is container.provider(Config)                        
 container.provider(RequestContext) is not container.provider(RequestContext)          # True
 ```
 
-## 延迟初始化
+## ⏳ 延迟初始化
 
 非延迟依赖会在 `init_dependency_container()` 时按依赖顺序构建；
 `lazy_init=True` 的依赖推迟到首次 `provider()` 时才构建。
@@ -122,7 +148,7 @@ container.init_dependency_container()   # 此时 HeavyClient 尚未构建
 client = container.provider(HeavyClient)  # 这一行才真正构建
 ```
 
-## 工厂函数
+## 🏭 工厂函数
 
 工厂函数需要返回类型注解，用它来确定依赖类型；工厂参数同样参与注入。
 
@@ -156,7 +182,7 @@ class SessionFactory:
 container.inject(create_thing, return_type=Thing, depend_name='thing')
 ```
 
-## 手动注入实例
+## 🧷 手动注入实例
 
 已经构造好的对象可以直接交给容器，供其它依赖自动注入：
 
@@ -168,7 +194,7 @@ container.inject('app_config', AppConfig())
 
 > 传类 / 工厂函数走**注册**，传实例走**手动注入**，二者共用 `container.inject(...)`。
 
-## 自定义名称
+## 🏷 自定义名称
 
 ```python
 container.inject(UserService, depend_name='user_service')
@@ -176,7 +202,7 @@ container.inject(UserService, depend_name='user_service')
 container.provider('user_service') is container.provider(UserService)   # True
 ```
 
-## 错误定位
+## 🧭 错误定位
 
 初始化失败时，异常信息会同时给出**依赖定义位置**和**异常实际发生位置**：
 
@@ -214,7 +240,7 @@ except DependencyInitError as error:
     print(error.__cause__)    # 原始异常
 ```
 
-## 与 Web 框架集成
+## 🔌 与 Web 框架集成
 
 `pyre-injector` 不依赖任何 Web 框架。框架侧通常按下面三步接入：
 
@@ -248,7 +274,7 @@ class BaseService:
         return autowired(name)
 ```
 
-## API 参考
+## 📖 API 参考
 
 | 名称 | 说明 |
 | --- | --- |
@@ -283,7 +309,7 @@ container.inject(
 container.provider(name)       # name: 类 / 工厂函数 / 字符串名称
 ```
 
-## 开发
+## 🛠 开发
 
 ```bash
 pip install -e . pytest
@@ -300,6 +326,6 @@ python examples/factory.py        # 工厂函数 / 工厂方法
 python examples/errors.py         # 异常与定位信息
 ```
 
-## 许可
+## 📄 许可
 
 本项目基于 [MIT](LICENSE) 许可开源。
